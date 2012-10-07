@@ -1,0 +1,32 @@
+﻿@model IEnumerable<CodeSmells.Models.File>
+@{
+	ViewBag.Title = "Index";
+}
+
+<h2>Code smells</h2>
+
+@foreach (var l in Model)
+{
+	<h3>@l.FileName</h3>
+	foreach (var loop in l.Loops.OrderBy(x => x.Start))
+	{
+		<table>
+		<thead>
+			<tr>
+				<th style="color:green;width:40px">Loop</th>
+				<th style="color:green">@loop.Start &ndash; @loop.End</th>
+			</tr>
+		</thead>
+
+			<tbody>
+				@foreach (var line in loop.Lines)
+				{
+					<tr>
+						<th>@line.Substring(0, line.IndexOf(": ")).Trim()</th>
+						<td><code>@line.Substring(line.IndexOf(": ") + 2).Trim()</code></td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		}
+}
