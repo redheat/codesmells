@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Web.Mvc;
 using CodeSmells.Models;
 
@@ -12,30 +13,35 @@ namespace CodeSmells.Controllers
 
         public void IndexAsync()
         {
-			AsyncManager.OutstandingOperations.Increment();
 	        const string baseVolume = @"\Work\Dev\";
-			var files = System.IO.Directory.EnumerateFiles(baseVolume + "Vx.WebApplication\\edit").Where(
-				f => f.EndsWith(".aspx") || f.EndsWith(".vb"));
 
-	        files = files.Concat(
-		        System.IO.Directory.EnumerateFiles(baseVolume + "Vx.Legacy").Where(
-			        f => f.EndsWith(".aspx") || f.EndsWith(".vb")));
+			var files = System.IO.Directory.EnumerateFiles(baseVolume + "Vx.WebApplication\\edit")
+				.Concat(System.IO.Directory.EnumerateFiles(baseVolume + "Vx.Legacy"))
+				.Where(
+			        f => f.EndsWith(".aspx") || f.EndsWith(".vb")
+				);
 
-			var concatFiles = new List<File>();
+			var fileList = new List<File>();
 
 			foreach (var f in files)
-				concatFiles.AddRange(Repo.ProcessConcatentation(f));
+			{
+				AsyncManager.OutstandingOperations.Increment();
+				ThreadPool.QueueUserWorkItem(file =>
+				{
+					fileList.AddRange(Repo.ProcessConcatentation(file.ToString()));
+					AsyncManager.OutstandingOperations.Decrement();
+				}, f);
+			}
 
-	        AsyncManager.Parameters["concatenatedFiles"] = (from x in concatFiles
-	                                                        where x.Loops.Any()
-															orderby x.FileName
-	                                                        select x);
-			AsyncManager.OutstandingOperations.Decrement();
+	        AsyncManager.Parameters["files"] = (from x in fileList
+												where x.Loops.Any()
+												orderby x.FileName
+												select x);
         }
 
-		public ActionResult IndexCompleted(IEnumerable<File> concatenatedFiles)
+		public ActionResult IndexCompleted(IEnumerable<File> files)
 		{
-			return View("Index", concatenatedFiles);
+			return View("Index", files);
 		}
 
     }
