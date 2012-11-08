@@ -1,4 +1,23 @@
 ﻿@model IEnumerable<CodeSmells.Models.File>
+@helper MarkResponseWrite(string s)
+{
+	if (s.Contains("<%=")) {
+		@Html.Raw(System.Text.RegularExpressions.Regex.Replace(s, @"(.*?)(<%=[\S\s]+?%>)(.*?)", x => {
+			return x.Groups[1].Value.Replace("<", "&lt;") +
+				"<mark>" + x.Groups[2].Value.Replace("<", "&lt;") + "</mark>" +
+				x.Groups[3].Value.Replace("<", "&lt;");
+		}));
+	}
+	else if (s.Contains("Response.Write")) {																							  
+		@Html.Raw(System.Text.RegularExpressions.Regex.Replace(s, @"(.*?)(Response.Write\([\S\s]+\))(.*?)", x => {
+			return x.Groups[1].Value.Replace("<", "&lt;") +
+				"<mark>" + x.Groups[2].Value.Replace("<", "&lt;") + "</mark>" +
+				x.Groups[3].Value.Replace("<", "&lt;");
+		}));
+	} else {
+		@Html.Encode(s);
+	}	
+}
 @{
 	ViewBag.Title = "Index";
 }
@@ -20,13 +39,33 @@
 
 			<tbody>
 				@foreach (var line in loop.Lines)
-				{
+	{
 					<tr>
 						<th>@line.Substring(0, line.IndexOf(": ")).Trim()</th>
 						<td><code>@line.Substring(line.IndexOf(": ") + 2).Trim()</code></td>
 					</tr>
-				}
+	}
 			</tbody>
 		</table>
+	}
+
+	if (l.Writes != null && l.Writes.Count > 0)
+	{
+		<table>
+			<thead>
+				<tr>
+					<th colspan="2" style="color:green;width:40px">Response.Write</th>
+				</tr>
+			</thead>
+			@foreach (var line in l.Writes.OrderBy(x => x))
+			{
+			<tbody>
+				<tr>
+					<td style="width:40px">@line</td>
+					<td><code>@MarkResponseWrite(l.Lines[line].Trim())</code></td>
+				</tr>
+			</tbody>
 		}
+	</table>
+	}
 }

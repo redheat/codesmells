@@ -13,14 +13,30 @@ namespace CodeSmells.Models
 			for (var line = 0; line < lines.Length; line++)
 			{
 				// Move onto the next row if this does not contain a code smell
-				if (!Rules.StringConcatenation.IsMatch(lines[line])) continue;
+				if (!Rules.StringConcatenation.IsMatch(lines[line]) && !Rules.ResponseWrite.IsMatch(lines[line]))
+					continue;
 
 				// Ignore commented lines
-				if (lines[line].Trim().StartsWith("'") || lines[line].Trim().StartsWith("//")) continue;
+				if (lines[line].Trim().StartsWith("'") || lines[line].Trim().StartsWith("//"))
+					continue;
 				
-				var file = new File { FileName = f, Lines = lines, Loops = new List<Loop>() };
+				var file = new File { FileName = f, Lines = lines, Loops = new List<Loop>(), Writes = new List<int>() };
 				var i = line;
 
+				if (lines[i].Contains("Response.Write(") || lines[i].Contains("<%="))
+				{
+					if (!lines[i].ToLower().Contains("htmlencode("))
+					{
+						// if the file isn't in our collection then add it
+						if (!files.Any(x => x.FileName == file.FileName))
+							files.Add(file);
+
+						file = files.Single(x => x.FileName == file.FileName);
+
+						// if this file isn't in our collection then add it
+						file.Writes.Add(i);
+					}
+				}
 				// loop from the matched line to the beginning of the document
 				// find if this line is in a loop
 				while (i > 0)

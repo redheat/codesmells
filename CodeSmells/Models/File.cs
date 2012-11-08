@@ -10,6 +10,7 @@ namespace CodeSmells.Models
 		public string FileName;
 		public string[] Lines;
 		public List<Loop> Loops;
+		public List<int> Writes;
 		private string _content;
 	}
 }

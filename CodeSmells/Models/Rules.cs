@@ -9,5 +9,6 @@ namespace CodeSmells.Models
 	public static class Rules
 	{
 		public static Regex StringConcatenation = new Regex(@"\b([\w]+) = \1 & ", RegexOptions.Compiled);
+		public static Regex ResponseWrite = new Regex(@"Response\.Write|<%=", RegexOptions.Compiled);
 	}
 }
